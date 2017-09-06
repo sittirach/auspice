@@ -3,6 +3,7 @@ import { connect } from "react-redux";
 import _min from "lodash/min";
 import _max from "lodash/max";
 import { select } from "d3-selection";
+import { scaleLinear } from "d3-scale";
 import leafletImage from "leaflet-image";
 import Card from "../framework/card";
 import { numericToCalendar, calendarToNumeric } from "../../util/dateHelpers";
@@ -517,42 +518,83 @@ class Map extends React.Component {
     let leftWindow = calendarToNumeric(this.props.dateMin);
     const end = calendarToNumeric(this.props.absoluteDateMax);
     const totalRange = end - start; // years in the animation
-
-    const animationIncrement = (animationTick * totalRange) / this.props.mapAnimationDurationInMilliseconds; // [(ms * years) / ms] = years eg 100 ms * 5 years / 30,000 ms =  0.01666666667 years
     const windowRange = animationWindowWidth * totalRange;
+
     let rightWindow = leftWindow + windowRange;
 
-    if (!window.NEXTSTRAIN) {
-      window.NEXTSTRAIN = {}; /* centralize creation of this if we need it anywhere else */
-    }
+    const animationTimerToLeftWindowScale = scaleLinear()
+                                      .domain([0, this.props.mapAnimationDurationInMilliseconds])
+                                      .range([start, end - windowRange]); /* |--------------------------*---| */
 
-    /* we should setState({reference}) so that it's not possible to create multiple */
+    const animationTimerToRightWindowScale = scaleLinear()
+                                      .domain([0, this.props.mapAnimationDurationInMilliseconds])
+                                      .range([start + windowRange, end]); /* |---*--------------------------| */
 
-    window.NEXTSTRAIN.mapAnimationLoop = setInterval(() => {
+    let initial_timestamp = null;
+
+    const elapsedArray = [];
+
+    const step = (timestamp) => {
       if (enableAnimationPerfTesting) { window.Perf.bump(); }
-      const newWindow = {min: numericToCalendar(leftWindow),
-        max: numericToCalendar(rightWindow)};
-
-      /* first pass sets the timer to absolute min and absolute min + windowRange because they reference above initial time window */
-      this.props.dispatch(changeDateFilter({newMin: newWindow.min, newMax: newWindow.max, quickdraw: true}));
-      // don't modifyURLquery
-
-      if (!this.props.mapAnimationCumulative) {
-        leftWindow += animationIncrement;
+      if (!initial_timestamp) {
+        initial_timestamp = timestamp;
       }
-      rightWindow += animationIncrement;
 
-      if (rightWindow >= end) {
-        clearInterval(window.NEXTSTRAIN.mapAnimationLoop);
-        window.NEXTSTRAIN.mapAnimationLoop = null;
-        this.props.dispatch(changeDateFilter({newMin: this.props.absoluteDateMin, newMax: this.props.absoluteDateMax, quickdraw: false}));
+      /* grows from 1 ms to 30,000 milliseconds, for instance. */
+      let elapsed = timestamp - initial_timestamp;
+      elapsedArray.push(elapsed);
+
+      if (elapsedArray[elapsedArray.length - 1] - elapsedArray[elapsedArray.length - 2] > 20) {
+        elapsed = elapsedArray[elapsedArray.length - 2] + 20
+      }
+
+      // if (elapsedArray[elapsedArray.length - 1] - elapsedArray[elapsedArray.length - 2] > 20) {
+      //   console.log(elapsedArray[elapsedArray.length - 1] - elapsedArray[elapsedArray.length - 2])
+      //
+      // }
+      // compare elasped and previous elapsed
+      // if too different, set elapsed back
+
+      if (elapsed < 30000) {
+        /* move map another tick */
+
+        if (this.props.mapAnimationCumulative) {
+          /* first pass sets the timer to absolute min and absolute min + windowRange because they reference above initial time window */
+          this.props.dispatch(
+            changeDateFilter({
+              newMax: numericToCalendar(animationTimerToRightWindowScale(elapsed)),
+              quickdraw: true
+            })
+          );
+        } else {
+          this.props.dispatch(
+            changeDateFilter({
+              newMin: numericToCalendar(animationTimerToLeftWindowScale(elapsed)),
+              newMax: numericToCalendar(animationTimerToRightWindowScale(elapsed)),
+              quickdraw: true
+            })
+          );
+        }
+
+        window.requestAnimationFrame(step);
+      } else {
+        /* make map stop */
+        this.props.dispatch(
+          changeDateFilter({
+            newMin: this.props.absoluteDateMin,
+            newMax: this.props.absoluteDateMax,
+            quickdraw: false
+          })
+        );
         this.props.dispatch({
           type: MAP_ANIMATION_PLAY_PAUSE_BUTTON,
           data: "Play"
         });
         modifyURLquery(this.context.router, {dmin: false, dmax: false});
       }
-    }, animationTick);
+    }
+
+    window.requestAnimationFrame(step);
 
   }
   render() {
