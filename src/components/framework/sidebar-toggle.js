@@ -12,8 +12,8 @@ sidebarOpen and mobileDisplay: green button with "close" icon
 const SidebarToggle = ({sidebarOpen, mobileDisplay, handler}) => {
 
   const containerStyle = {
-    width: mobileDisplay ? 60 : 15,
-    height: mobileDisplay ? 60 : 15,
+    width: mobileDisplay ? 60 : 0,
+    height: mobileDisplay ? 60 : 0,
     position: "absolute",
     top: mobileDisplay ? 15 : 0,
     left: mobileDisplay ? "auto" : sidebarOpen ? controlsWidth + 24 : 0,
@@ -40,7 +40,7 @@ const SidebarToggle = ({sidebarOpen, mobileDisplay, handler}) => {
     marginRight: "auto",
     verticalAlign: "middle",
     color: mobileDisplay ? "#FFFFFF" : "#444",
-    fontSize: mobileDisplay ? 26 : 12
+    fontSize: mobileDisplay ? 26 : 0
   };
 
   let iconClass = "fa fa-close";

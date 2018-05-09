@@ -38,7 +38,25 @@ class NavBar extends React.Component {
         overflow: "hidden",
         left: 0,
         zIndex: 1001,
-        transition: "left .3s ease-out"
+        transition: "left .3s ease-out",
+        // backgroundColor: "#E1E1E1"
+      },
+      drawer: {
+        maxWidth: 960,
+        flexDirection: "column",
+        marginTop: "auto",
+        marginRight: "auto",
+        marginBottom: "auto",
+        marginLeft: "auto",
+        height: "auto",
+        justifyContent: "space-between",
+        alignItems: "center",
+        overflow: "hidden",
+        left: 0,
+        zIndex: 1001,
+        transition: "left .3s ease-out",
+        backgroundColor: "#AAA",
+        boxShadow: '0px 0px 5px -1px rgba(0, 0, 0, 0.7) inset'
       },
       logo: {
         paddingLeft: "8px",
@@ -61,11 +79,11 @@ class NavBar extends React.Component {
       link: {
         paddingLeft: this.props.minified ? "6px" : "12px",
         paddingRight: this.props.minified ? "6px" : "12px",
-        paddingTop: "20px",
-        paddingBottom: "20px",
+        paddingTop: "12px",
+        paddingBottom: "12px",
         textDecoration: "none",
         cursor: "pointer",
-        fontSize: this.props.minified ? 12 : 16,
+        fontSize: this.props.minified ? 20 : 16,
         fontWeight: 400,
         textTransform: "uppercase"
       },
@@ -85,6 +103,17 @@ class NavBar extends React.Component {
         verticalAlign: "middle",
         width: 70,
         color: brandColor
+      },
+      icon: {
+        width: 22,
+        height: 50,
+        lineHeight: "50px",
+        marginLeft: 10,
+        marginRight: 10,
+        verticalAlign: "middle",
+        cursor: "pointer",
+        color: "#555",
+        fontSize: 26
       }
     };
   }
@@ -103,23 +132,28 @@ class NavBar extends React.Component {
       <span key={i} style={{color: titleColors[i] }}>{letter}</span>
     );
     return (
-      this.props.minified ?
-        <div/>
-        :
-        <InternalLink style={styles.title} dispatch={this.props.dispatch} path="/">
-          {rainbowTitle}
-        </InternalLink>
+      <InternalLink style={styles.title} dispatch={this.props.dispatch} path="/">
+        {rainbowTitle}
+      </InternalLink>
     );
   }
 
   getLink(name, url, selected, styles) {
-    const linkCol = this.props.minified ? "#000" : darkGrey;
+    const linkCol = this.props.minified ? "#fff" : darkGrey;
     return (
       selected ?
         <div style={{ ...{color: linkCol}, ...styles.inactive }}>{name}</div> :
         <InternalLink dispatch={this.props.dispatch} style={{ ...{color: linkCol}, ...styles.link }} path={url}>
           {name}
         </InternalLink>
+    );
+  }
+
+  getToggle(styles) {
+    return (
+      <div style={styles.icon}>
+        <i className="fa fa-bars" aria-hidden="true"/>
+      </div>
     );
   }
 
@@ -141,14 +175,20 @@ class NavBar extends React.Component {
       );
     }
     return (
-      <Flex style={styles.main}>
-        {this.getLogo(styles)}
-        {this.getLogoType(styles)}
-        <div style={{flex: 5}}/>
-        {this.getLink("About", "/about", this.props.aboutSelected, styles)}
-        {this.getLink("Methods", "/methods", this.props.methodsSelected, styles)}
-        <div style={{width: this.props.minified ? 8 : 0 }}/>
-      </Flex>
+      <div>
+        <Flex style={styles.main}>
+          {this.getLogo(styles)}
+          {this.getLogoType(styles)}
+          <div style={{flex: 5}}/>
+          {this.getToggle(styles)}
+          <div style={{width: this.props.minified ? 8 : 0 }}/>
+        </Flex>
+        <Flex style={styles.drawer}>
+          {this.getLink("Datasets", "/", this.props.methodsSelected, styles)}
+          {this.getLink("Docs", "/", this.props.aboutSelected, styles)}
+          {this.getLink("Posts", "/", this.props.methodsSelected, styles)}
+        </Flex>
+      </div>
     );
   }
 }
